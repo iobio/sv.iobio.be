@@ -2,7 +2,7 @@
   "name": "sv.iobio.be",
   "version": "1.0.0",
   "description": "back end services for testing sv.iobio",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
