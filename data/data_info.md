@@ -1,6 +1,6 @@
 # Data Information
 
-Data for bands and chromosomes was retrieved from RefSeq. Their GRCh37 & 38 gff.gz files were obtained from: [NCBI](https://www.ncbi.nlm.nih.gov/projects/genome/guide/human/index.shtml).
+Data for bands and chromosomes was retrieved from RefSeq. Their GRCh37 & 38 gff.gz files were obtained from: [NCBI](https://www.ncbi.nlm.nih.gov/projects/genome/guide/human/index.shtml). These files were filtered in the command line for particular features (specifics below).
 
 ## Filtering
 
