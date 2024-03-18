@@ -11,9 +11,3 @@ gunzip -c 'Human Genome RefSeq.gff.gz' | awk '$3 == "region" && $1 ~ /^NC/ && $2
 ```
 
 **once parsed there is an additional entry that doesn't match the 23 that I've removed*
-
-### Bands
-
-```shell
-gunzip -c 'Human Genome RefSeq.gff.gz' | awk '$3 == "region" && $1 ~ /^NW/ && $2 == "RefSeq" {print}' > bands.txt
-```
