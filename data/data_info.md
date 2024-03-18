@@ -11,3 +11,7 @@ gunzip -c 'Human Genome RefSeq.gff.gz' | awk '$3 == "region" && $1 ~ /^NC/ && $2
 ```
 
 **once parsed there is an additional entry that doesn't match the 23 that I've removed*
+
+### Bands
+
+Bands retrieved from UCSC data repositories as text files. [Docs](https://genome.ucsc.edu/cgi-bin/hgTables?db=hg38&hgta_group=map&hgta_track=cytoBand&hgta_table=cytoBand&hgta_doSchema=describe+table+schema)
