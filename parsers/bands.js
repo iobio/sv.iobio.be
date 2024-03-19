@@ -1,6 +1,6 @@
 /**
  * For now I think one function exported that takes a URL (for a file) and returns an array of bands is sufficient.
- * Not making it "default" because I think we might want to add more functions to this file.
+ * Not making it "default" because I think we might want to add more functions to this file at a later time.
  * 
  * Bands have the following properties:
  * - chr (string)
