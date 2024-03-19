@@ -6,6 +6,13 @@ import express from 'express';
 const app = express();
 const port = 3000;
 
+//will need to set the cors headers to allow all
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
+
 //the bands endpoint expects a build hg19 or hg38 returns the bands
 //The gzipped files are in our data folder
 app.get('/bands', async (req, res) => {
