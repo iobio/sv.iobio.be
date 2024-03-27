@@ -1,6 +1,7 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
+import { annotateJson } from "./testing/annotate_json.js";
 import express from 'express';
 
 const app = express();
@@ -90,6 +91,17 @@ app.get('/centromeres', async (req, res) => {
         } catch (e) {
             res.status(500).send(e.message);
         }
+    }
+});
+
+//the annotate endpoint is for testing only
+app.get('/vcfjson', async (req, res) => {
+    let annotatedJson;
+    try {
+        annotatedJson = await annotateJson();
+        res.send(annotatedJson);
+    } catch (e) {
+        res.status(500).send(e.message);
     }
 });
 
