@@ -43,9 +43,19 @@ function annotateJson() {
         let bcftoolsCmd = `bcftools view -r ${variantLocation} -H ${vcfPath}`;
         let vcfOutput = execSync(bcftoolsCmd).toString().split('\t');
         let vcfInfo = vcfOutput[7];
+        let rank = index + 1;
+        let gene = { geneSymbol: sample.geneSymbol, geneId: sample.geneIdentifier.geneId, ensemblId: sample.geneIdentifier.ensemblId};
+        let exomiserCombScore = sample.combinedScore;
+        let exomiserPval = sample.pValue;
+        let exomiserPriorityScore = sample.priorityScore;
 
         //add the vcf annotation to the variant info 
         variantInfo.vcfInfo = vcfInfo;
+        variantInfo.rank = rank;
+        variantInfo.gene = gene;
+        variantInfo.exomiserCombScore = exomiserCombScore;
+        variantInfo.exomiserPval = exomiserPval;
+        variantInfo.exomiserPriorityScore = exomiserPriorityScore;
 
         //add the variant info to the output json
         outputJson.push(variantInfo);
