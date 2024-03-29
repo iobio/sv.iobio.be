@@ -33,6 +33,7 @@ function annotateJson() {
 
     let outputJson = [];
     let vcfPath = path.join(dataDir, fileName + '.vcf.gz');
+    let locationMap = {};
 
     //For each item in the json file we want to add the vcf annotation to the json file using bcftools and the vcf file
     for (const [index, sample] of jsonData.entries()) {
@@ -56,8 +57,19 @@ function annotateJson() {
         variantInfo.exomiserCombScore = exomiserCombScore;
         variantInfo.exomiserPval = exomiserPval;
         variantInfo.exomiserPriorityScore = exomiserPriorityScore;
+        variantInfo.otherGenes = [];
 
-        //add the variant info to the output json
+        //if we havent seen this location before we want to add it to the location map
+        if (!locationMap[variantLocation]) {
+            locationMap[variantLocation] = variantInfo;
+        } else {
+            //if we have seen this location so we will add this variant info to the otherGenes array
+            locationMap[variantLocation].otherGenes.push(gene);
+        }
+    }
+
+    //add the location map to the output json
+    for (const [location, variantInfo] of Object.entries(locationMap)) {
         outputJson.push(variantInfo);
     }
 
