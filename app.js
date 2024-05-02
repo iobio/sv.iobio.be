@@ -2,6 +2,7 @@ import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
 import { annotateJson } from "./testing/annotate_json.js";
+import sqlite3 from 'sqlite3';
 import express from 'express';
 
 const app = express();
@@ -92,6 +93,45 @@ app.get('/centromeres', async (req, res) => {
             res.status(500).send(e.message);
         }
     }
+});
+
+app.get('/genes', (req, res) => {
+    let build = req.query.build;
+    let source = req.query.source;
+    let sourceText = '';
+
+    if (!build || (build !== 'hg19' && build !== 'hg38')) {
+        res.status(400).send('Valid build query parameter is required');
+        return;
+    }
+
+    if (source === 'refseq') {
+        sourceText = ' AND source = "refseq"';
+    }
+
+    let query = '';
+    if (build === 'hg19') {
+        query = 'SELECT * FROM genes WHERE build = "GRCh37"' + sourceText;
+    } else if (build === 'hg38') {
+        query = 'SELECT * FROM genes WHERE build = "GRCh38"' + sourceText;
+    }
+
+    const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
+
+    db.all(query, [], (err, rows) => {
+        db.close(); // Close the database after fetching the data
+
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+        //for each row we want to have this become a json object where the gene_symbol is the key
+        let geneMap = {};
+        rows.forEach(row => {
+            geneMap[row.gene_symbol] = row;
+        });
+        res.send(geneMap);
+    });
 });
 
 //the annotate endpoint is for testing only
