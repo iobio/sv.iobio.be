@@ -10,12 +10,12 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-const dataDirSmoove = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Smoove';
-const dataDirManta = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Manta';
+// const smooveDataLoc = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Smoove';
+const mantaDataLoc = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Manta';
 
 function annotateJson() {
     //get the json file
-    const dataDir = dataDirSmoove;
+    const dataDir = mantaDataLoc;
     const files = fs.readdirSync(dataDir);
     const jsonFile = files.filter(file => file.endsWith('.json'));
 
