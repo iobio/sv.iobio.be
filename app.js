@@ -1,7 +1,7 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
-import { annotateJson } from "./testing/annotate_json.js";
+import { annotateJson, vcfToJson } from "./testing/annotate_json.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
 
@@ -138,8 +138,26 @@ app.get('/genes', (req, res) => {
 app.get('/vcfjson', async (req, res) => {
     let annotatedJson;
     try {
-        annotatedJson = await annotateJson();
+        annotatedJson = annotateJson();
         res.send(annotatedJson);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
+app.get('/dataFromVcf', (req, res) => {
+    let vcfPath = req.query.vcfPath;
+
+    if (!vcfPath) {
+        res.status(400).send('Valid vcfPath query parameter is required');
+        return;
+    }
+
+    let json;
+    try {
+        json = vcfToJson(vcfPath, (jsonOutput) => {
+            res.send(jsonOutput);
+        });
     } catch (e) {
         res.status(500).send(e.message);
     }

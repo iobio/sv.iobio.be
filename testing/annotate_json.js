@@ -8,7 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 
 // const smooveDataLoc = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Smoove';
 const mantaDataLoc = '/Users/emerson/Documents/Data/SV.iobio_testData/svpipe_results/Manta';
@@ -41,7 +41,7 @@ function annotateJson() {
         let variantLocation = `chr${variantInfo.contigName}:${variantInfo.start}-${variantInfo.end}`;
 
         //get the vcf annotation for the variant
-        let bcftoolsCmd = `bcftools view -r ${variantLocation} -H ${vcfPath}`;
+        let bcftoolsCmd = `bcftools view -r ${variantLocation} -H ${vcfPath} 2>/dev/null`;
         let vcfOutput = execSync(bcftoolsCmd).toString().split('\t');
         let vcfInfo = vcfOutput[7];
         let rank = index + 1;
@@ -77,4 +77,95 @@ function annotateJson() {
     return outputJson;
 }
 
-export { annotateJson };
+function vcfToJson(filePath, callback) {
+    console.log(filePath);
+    let bcftoolsCmd = spawn('bcftools', ['view', '-H', filePath]);
+
+    let outputJson = [];
+    let buffer = '';
+
+    bcftoolsCmd.stdout.on('data', (data) => {
+        buffer += data.toString();
+        let lines = buffer.split('\n');
+        buffer = lines.pop(); // Save the incomplete line
+        
+        let validChrom = new Set([
+            ...Array.from({length:22}, (_, i) => (i + 1).toString()), 
+            'X', 'Y'
+        ]);
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            let variant = line.split('\t');
+            let infoFields = variant[7].split(';');
+            let end = variant[1];
+            for (let field of infoFields) {
+                if (field.startsWith('END=')) {
+                    end = field.split('=')[1];
+                    break;
+                }
+            }
+
+            let type = infoFields[1].split('=')[1];
+            if (type.startsWith('MantaBND')) {
+                type = 'BND'
+            }
+
+            let variantInfo = {
+                contigName: variant[0].replace(/^chr/, ''),
+                start: variant[1],
+                end: end,
+                ref: variant[3],
+                alt: variant[4],
+                //for now match
+                variantLocation:`chr${variant[0].replace(/^chr/, '')}:${variant[1]}-${end}`, 
+                vcfInfo: '',
+                rank: '',
+                gene: '',
+                exomiserCombScore: 0,
+                exomiserPval: 0,
+                exomiserPriorityScore: 0,
+                otherGenes: [], 
+                type: type
+            };
+
+            if (!validChrom.has(variantInfo.contigName)){
+                continue;
+            }
+
+            outputJson.push(variantInfo);
+        }
+    });
+
+    bcftoolsCmd.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    bcftoolsCmd.on('close', (code) => {
+        if (buffer.trim()) {
+            let variant = buffer.split('\t');
+            let infoFields = variant[7].split(';');
+            let end = variant[1];
+            for (let field of infoFields) {
+                if (field.startsWith('END=')) {
+                    end = field.split('=')[1];
+                    break;
+                }
+            }
+
+            let variantInfo = {
+                contigName: variant[0],
+                start: variant[1],
+                end: end,
+                ref: variant[3],
+                alt: variant[4]
+            };
+            outputJson.push(variantInfo);
+        }
+
+        callback(outputJson);
+    });
+}
+
+export { annotateJson, vcfToJson};
