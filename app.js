@@ -111,7 +111,7 @@ app.get('/genes', (req, res) => {
 
     let query = '';
     if (build === 'hg19') {
-        query = 'SELECT * FROM genes WHERE build = "GRCh37"' + sourceText;
+        query = 'SELECT * FROM genes WHERE build = "GRCh37"' + sourceText; //this is okay because I made this here it didnt come from the request
     } else if (build === 'hg38') {
         query = 'SELECT * FROM genes WHERE build = "GRCh38"' + sourceText;
     }
@@ -133,6 +133,67 @@ app.get('/genes', (req, res) => {
         res.send(geneMap);
     });
 });
+
+app.get('/genes/region', (req, res) => {
+    let build = req.query.build;
+    let source = req.query.source;
+    let startChr = req.query.startChr
+    let startPos = req.query.startPos
+    let endChr = req.query.endChr
+    let endPos = req.query.endPos
+    let between = req.query.between ? req.query.between.split(','): [];
+    let sourceText = ''
+
+    if (!build | !source | !startChr | !startPos | !endChr | !endPos) {
+        res.status(400).send('Endpoint requires a start chr & position as well as an end chr & position. Typical build and source are also required');
+        return;
+    }
+
+    if (source === 'refseq') {
+        sourceText = ' AND source = "refseq"';
+    }
+
+    let query = '';
+    let buildText = '';
+
+    if (build === 'hg19') {
+        buildText = 'build = "GRCh37"';
+    } else if (build === 'hg38') {
+        buildText = 'build = "GRCh38"';
+    }
+
+    let params = [];
+
+    if (startChr == endChr) {
+        params = [startChr, startPos, endPos]
+        query = `SELECT * FROM genes WHERE ${buildText} AND (chr = ? AND start >= ? AND end <= ?)` + sourceText;
+    } else if (between.length > 0) {
+        let placeholders = between.map(() => '?').join(', ')
+        params = [startChr, startPos, endChr, endPos, ...between]
+        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND start >= ?) OR (chr = ? AND end <= ?) OR (chr IN (${placeholders})))` + sourceText;   
+    } else {
+        params = [start.chrName, start.start, end.chrName, end.end]
+        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND start >= ?) OR (chr = ? AND end <= ?))` + sourceText;
+    }
+
+    const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
+
+    db.all(query, params, (err, rows) => {
+        db.close(); // Close the database after fetching the data
+
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+        //for each row we want to have this become a json object where the gene_symbol is the key
+        let geneMap = {};
+        rows.forEach(row => {
+            geneMap[row.gene_symbol] = row;
+        });
+        res.send(geneMap);
+    });
+
+})
 
 //the annotate endpoint is for testing only
 app.get('/vcfjson', async (req, res) => {
