@@ -114,8 +114,8 @@ function vcfToJson(filePath, callback) {
 
             let variantInfo = {
                 contigName: variant[0].replace(/^chr/, ''),
-                start: variant[1],
-                end: end,
+                start: parseInt(variant[1]),
+                end: parseInt(end),
                 ref: variant[3],
                 alt: variant[4],
                 //for now match
