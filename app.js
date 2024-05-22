@@ -169,11 +169,11 @@ app.get('/genes/region', (req, res) => {
         query = `SELECT * FROM genes WHERE ${buildText} AND chr = ? AND ((start >= ? AND end <= ?) OR ((? >= start AND ? < end) OR (? >= start AND ? < end)))` + sourceText;
     } else if (between.length > 0) {
         let placeholders = between.map(() => '?').join(', ')
-        params = [startChr, startPos, endChr, endPos, ...between]
-        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND start >= ?) OR (chr = ? AND end <= ?) OR (chr IN (${placeholders})))` + sourceText;   
+        params = [startChr, startPos, startPos, endChr, endPos, endPos, ...between]
+        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND (start >= ? OR end >= ?)) OR (chr = ? AND (end <= ? OR start <= end ?)) OR (chr IN (${placeholders})))` + sourceText;   
     } else {
-        params = [start.chrName, start.start, end.chrName, end.end]
-        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND start >= ?) OR (chr = ? AND end <= ?))` + sourceText;
+        params = [startChr, startPos, startPos, endChr, endPos, endPos]
+        query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND (start >= ? OR end >= ?)) OR (chr = ? AND (end <= ? OR start <= end ?))` + sourceText;
     }
 
     const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
