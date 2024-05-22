@@ -21,3 +21,7 @@ Bands retrieved from UCSC data repositories as text files. [Docs](https://genome
 Centromeres were also retrieved from UCSC data repositories. [Docs](https://genome.ucsc.edu/cgi-bin/hgTables?db=hg38&hgta_group=map&hgta_track=centromeres&hgta_table=centromeres&hgta_doSchema=describe+table+schema)
 
 hg19 did not provide a centromeres only reference but was listed in the "gaps" reference [Docs](https://genome.ucsc.edu/cgi-bin/hgTables?db=hg19&hgta_group=map&hgta_track=gap&hgta_table=gap&hgta_doSchema=describe+table+schema)
+
+### HPO DB
+
+HPO DB is built with information downloaded from the HPO [HPO DB Downloads](https://hpo.jax.org/app/data/ontology)
