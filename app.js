@@ -192,8 +192,111 @@ app.get('/genes/region', (req, res) => {
         });
         res.send(geneMap);
     });
+})
+
+//We will also want to get phenotypes for a given gene
+app.get('/genePhenotypes', (req, res) => {
+    let geneName = req.query.gene;
+    let geneNum = null;
+
+    if (!geneName) {
+        res.status(400).send('gene is a required parameter for this endpoint');
+        return;
+    }
+
+    //We need to get the gene # from our genes table to use in other queries
+    const db = new sqlite3.Database('./data/hpo.db');
+    let geneQuery = 'SELECT * FROM genes WHERE gene_symbol = ?';
+    let geneParams = [geneName];
+
+    let phenQuery = ''
+
+    db.all(geneQuery, geneParams, (err, rows) => {
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+
+        //There should only be one gene that matches a particular gene symbol if there aren't any dont continue
+        if (rows.length == 0) {
+            res.send([])
+            return;
+        }
+
+        //If we get here we had a gene found with that symbol
+        geneNum = rows[0].gene_id;
+        console.log(geneNum)
+        phenQuery = `SELECT * FROM term_to_gene WHERE gene_id = ${geneNum}` //not washing because this came from our own db
+
+        db.all(phenQuery, [], (err, rows) => {
+            db.close();
+    
+            if (err) {
+                res.status(500).send(err.message);
+                return;
+            }
+    
+            let phenMap = {}
+            rows.forEach(row => {
+                phenMap[row.term_id] = row;
+            })
+            res.send(phenMap)
+        });
+    })
 
 })
+
+//We will also want to get phenotypes for a given gene
+app.get('/geneDiseases', (req, res) => {
+    let geneName = req.query.gene;
+    let geneNum = null;
+
+    if (!geneName) {
+        res.status(400).send('gene is a required parameter for this endpoint');
+        return;
+    }
+
+    //We need to get the gene # from our genes table to use in other queries
+    const db = new sqlite3.Database('./data/hpo.db');
+    let geneQuery = 'SELECT * FROM genes WHERE gene_symbol = ?';
+    let geneParams = [geneName];
+
+    let diseaseQuery = ''
+
+    db.all(geneQuery, geneParams, (err, rows) => {
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+
+        //There should only be one gene that matches a particular gene symbol if there aren't any dont continue
+        if (rows.length == 0) {
+            res.send([])
+            return;
+        }
+
+        //If we get here we had a gene found with that symbol
+        geneNum = rows[0].gene_id;
+        diseaseQuery = `SELECT * FROM gene_to_disease WHERE gene_id = ${geneNum}`//not washing because this came from our own db
+
+        db.all(diseaseQuery, [], (err, rows) => {
+            db.close();
+    
+            if (err) {
+                res.status(500).send(err.message);
+                return;
+            }
+    
+            let diseaseMap = {}
+            rows.forEach(row => {
+                diseaseMap[row.disease_id] = row;
+            });
+            res.send(diseaseMap)
+        });
+    })
+
+})
+
 
 //the annotate endpoint is for testing only
 app.get('/vcfjson', async (req, res) => {
