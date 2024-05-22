@@ -165,8 +165,8 @@ app.get('/genes/region', (req, res) => {
     let params = [];
 
     if (startChr == endChr) {
-        params = [startChr, startPos, endPos]
-        query = `SELECT * FROM genes WHERE ${buildText} AND (chr = ? AND start >= ? AND end <= ?)` + sourceText;
+        params = [startChr, startPos, endPos, startPos, startPos, endPos, endPos]
+        query = `SELECT * FROM genes WHERE ${buildText} AND chr = ? AND ((start >= ? AND end <= ?) OR ((? >= start AND ? < end) OR (? >= start AND ? < end)))` + sourceText;
     } else if (between.length > 0) {
         let placeholders = between.map(() => '?').join(', ')
         params = [startChr, startPos, endChr, endPos, ...between]
