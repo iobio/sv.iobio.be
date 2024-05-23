@@ -2,6 +2,7 @@ import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
 import { annotateJson, vcfToJson } from "./testing/annotate_json.js";
+import { getGeneIdsList } from "./testing/dbHelpers.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
 
@@ -225,7 +226,6 @@ app.get('/genePhenotypes', (req, res) => {
 
         //If we get here we had a gene found with that symbol
         geneNum = rows[0].gene_id;
-        console.log(geneNum)
         phenQuery = `SELECT * FROM term_to_gene WHERE gene_id = ${geneNum}` //not washing because this came from our own db
 
         db.all(phenQuery, [], (err, rows) => {
@@ -294,9 +294,65 @@ app.get('/geneDiseases', (req, res) => {
             res.send(diseaseMap)
         });
     })
-
 })
 
+//We will also want to get phenotypes for a given gene
+app.get('/geneAssociations', async (req, res) => {
+    let genes = req.query.genes ? req.query.genes.split(',') : [];
+
+    if (!genes) {
+        res.status(400).send('A list of genes is a required parameter for this endpoint');
+        return;
+    }
+
+    const db = new sqlite3.Database('./data/hpo.db');
+    let geneIdsList = await getGeneIdsList(genes, db);
+
+    let placeholders = geneIdsList.map(() => '?').join(',');
+
+    let phenQuery = `SELECT term_to_gene.*, genes.gene_symbol FROM term_to_gene JOIN genes ON term_to_gene.gene_id = genes.gene_id WHERE term_to_gene.gene_id IN (${placeholders})`;
+    let phenPromise = new Promise((resolve, reject) => {
+        db.all(phenQuery, geneIdsList, (err, rows) => {
+            if (err) {
+                reject(err);
+            }
+    
+            let phenotypesToGene = {};
+            rows.forEach(row => {
+                if (phenotypesToGene.hasOwnProperty(row.gene_symbol)){
+                    phenotypesToGene[row.gene_symbol][row.term_id] = row;
+                } else {
+                    //establish the structure of the phenotypes to gene
+                    phenotypesToGene[row.gene_symbol] = {};
+                    phenotypesToGene[row.gene_symbol][row.term_id] = row;
+                }
+            })
+            resolve(phenotypesToGene);
+        });
+    })
+
+    let diseaseQuery = `SELECT gene_to_disease.*, genes.gene_symbol FROM gene_to_disease JOIN genes ON gene_to_disease.gene_id = genes.gene_id WHERE gene_to_disease.gene_id IN (${placeholders})`
+    let diseasePromise = new Promise((resolve, reject) => {
+        db.all(diseaseQuery, geneIdsList, (err, rows) => {
+            if (err) {
+                reject(err);
+            }
+            let diseasesToGene = {};
+            rows.forEach(row => {
+                if (diseasesToGene.hasOwnProperty(row.gene_symbol)){
+                    diseasesToGene[row.gene_symbol][row.disease_id] = row;
+                } else {
+                    diseasesToGene[row.gene_symbol] = {};
+                    diseasesToGene[row.gene_symbol][row.disease_id] = row;
+                }
+            })
+            resolve(diseasesToGene);
+        });
+    })
+    let [phenotypeMap, diseaseMap] = await Promise.all([phenPromise, diseasePromise]);
+    db.close();
+    res.send({phenToGene: phenotypeMap, diseaseToGene: diseaseMap})
+})
 
 //the annotate endpoint is for testing only
 app.get('/vcfjson', async (req, res) => {
