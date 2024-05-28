@@ -354,6 +354,41 @@ app.get('/geneAssociations', async (req, res) => {
     res.send({phenToGene: phenotypeMap, diseaseToGene: diseaseMap})
 })
 
+app.get('/phenotypeGenes', (req, res) => {
+    let phenotypes = req.query.phenotypes ? req.query.phenotypes.split(',') : [];
+
+    if (!phenotypes) {
+        res.status(400).send('A list of phenotypes is a required parameter for this endpoint');
+        return;
+    }
+
+    const db = new sqlite3.Database('./data/hpo.db');
+
+    let placeholders = phenotypes.map(() => '?').join(',');
+
+    let geneQuery = `SELECT term_to_gene.*, genes.gene_symbol FROM term_to_gene JOIN genes ON term_to_gene.gene_id = genes.gene_id WHERE term_to_gene.term_id IN (${placeholders})`;
+
+    db.all(geneQuery, phenotypes, (err, rows) => {
+        db.close(); // Close the database after fetching the data
+
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+
+        let geneMap = {};
+        rows.forEach(row => {
+            if (geneMap.hasOwnProperty(row.gene_symbol)){
+                geneMap[row.gene_symbol][row.term_id] = row;
+            } else {
+                geneMap[row.gene_symbol] = {};
+                geneMap[row.gene_symbol][row.term_id] = row;
+            }
+        });
+        res.send(geneMap);
+    });
+});
+
 //the annotate endpoint is for testing only
 app.get('/vcfjson', async (req, res) => {
     let annotatedJson;
