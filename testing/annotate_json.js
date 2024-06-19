@@ -107,9 +107,12 @@ function vcfToJson(filePath, callback) {
                 }
             }
 
-            let type = infoFields[1].split('=')[1];
-            if (type.startsWith('MantaBND')) {
-                type = 'BND'
+            let type = 'none';
+            for (let field of infoFields) {
+                if (field.startsWith('SVTYPE=')) {
+                    type = field.split('=')[1];
+                    break;
+                }
             }
 
             let variantInfo = {
