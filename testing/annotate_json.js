@@ -79,7 +79,17 @@ function annotateJson() {
 
 function vcfToJson(filePath, callback) {
     console.log(filePath);
-    let bcftoolsCmd = spawn('bcftools', ['view', '-H', filePath]);
+    // Determine if the filePath is a URL
+    const isUrl = filePath.startsWith('http://') || filePath.startsWith('https://');
+
+    let bcftoolsCmd;
+    if (isUrl) {
+        // Use curl to stream the file from the URL
+        bcftoolsCmd = spawn('sh', ['-c', `curl -s ${filePath} | bcftools view -H -`]);
+    } else {
+        // Directly use bcftools for local files
+        bcftoolsCmd = spawn('bcftools', ['view', '-H', filePath]);
+    }
 
     let outputJson = [];
     let buffer = '';
