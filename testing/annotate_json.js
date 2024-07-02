@@ -80,12 +80,12 @@ function annotateJson() {
 function vcfToJson(filePath, callback) {
     console.log(filePath);
     // Determine if the filePath is a URL
-    const isUrl = filePath.startsWith('http://') || filePath.startsWith('https://');
+    const isUrl = filePath.startsWith('http://') || filePath.startsWith('https://') || filePath.startsWith('ftp://');
 
     let bcftoolsCmd;
     if (isUrl) {
         // Use curl to stream the file from the URL
-        bcftoolsCmd = spawn('sh', ['-c', `curl -s ${filePath} | bcftools view -H -`]);
+        bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools view -H -`]);
     } else {
         // Directly use bcftools for local files
         bcftoolsCmd = spawn('bcftools', ['view', '-H', filePath]);
@@ -144,6 +144,11 @@ function vcfToJson(filePath, callback) {
             };
 
             if (!validChrom.has(variantInfo.contigName)){
+                continue;
+            }
+
+            //filter make sure the variant is at least 100bp
+            if (variantInfo.end - variantInfo.start <= 500) {
                 continue;
             }
 
