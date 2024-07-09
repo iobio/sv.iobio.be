@@ -310,7 +310,11 @@ app.get('/geneAssociations', async (req, res) => {
 
     let placeholders = geneIdsList.map(() => '?').join(',');
 
-    let phenQuery = `SELECT term_to_gene.*, genes.gene_symbol FROM term_to_gene JOIN genes ON term_to_gene.gene_id = genes.gene_id WHERE term_to_gene.gene_id IN (${placeholders})`;
+    let phenQuery = `SELECT term_to_gene.*, genes.gene_symbol, terms.name 
+        FROM term_to_gene 
+        JOIN genes ON term_to_gene.gene_id = genes.gene_id
+        JOIN terms ON term_to_gene.term_id = terms.term_id
+        WHERE term_to_gene.gene_id IN (${placeholders})`;
     let phenPromise = new Promise((resolve, reject) => {
         db.all(phenQuery, geneIdsList, (err, rows) => {
             if (err) {
@@ -331,7 +335,12 @@ app.get('/geneAssociations', async (req, res) => {
         });
     })
 
-    let diseaseQuery = `SELECT gene_to_disease.*, genes.gene_symbol FROM gene_to_disease JOIN genes ON gene_to_disease.gene_id = genes.gene_id WHERE gene_to_disease.gene_id IN (${placeholders})`
+    let diseaseQuery = `
+        SELECT gene_to_disease.*, genes.gene_symbol, diseases.disease_name 
+        FROM gene_to_disease 
+        JOIN genes ON gene_to_disease.gene_id = genes.gene_id
+        JOIN diseases ON gene_to_disease.disease_id = diseases.disease_id 
+        WHERE gene_to_disease.gene_id IN (${placeholders})`
     let diseasePromise = new Promise((resolve, reject) => {
         db.all(diseaseQuery, geneIdsList, (err, rows) => {
             if (err) {
