@@ -89,7 +89,7 @@ export function getGeneAssociations(genes, db) {
     });
 }
 
-export function getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, between, sourceText, db) {
+export function getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, db) {
     /**
      * 
      */
@@ -112,10 +112,6 @@ export function getOverlappedGenes(build, source, startChr, startPos, endChr, en
         if (startChr == endChr) {
             params = [startChr, startPos, endPos, startPos, startPos, endPos, endPos]
             query = `SELECT * FROM genes WHERE ${buildText} AND chr = ? AND ((start >= ? AND end <= ?) OR ((? >= start AND ? < end) OR (? >= start AND ? < end)))` + sourceText;
-        } else if (between.length > 0) {
-            let placeholders = between.map(() => '?').join(', ')
-            params = [startChr, startPos, startPos, endChr, endPos, endPos, ...between]
-            query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND (start >= ? OR end >= ?)) OR (chr = ? AND (end <= ? OR start <= end ?)) OR (chr IN (${placeholders})))` + sourceText;   
         } else {
             params = [startChr, startPos, startPos, endChr, endPos, endPos]
             query = `SELECT * FROM genes WHERE ${buildText} AND ((chr = ? AND (start >= ? OR end >= ?)) OR (chr = ? AND (end <= ? OR start <= end ?))` + sourceText;

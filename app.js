@@ -1,8 +1,8 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
-import { annotateJson, vcfToJson } from "./testing/annotate_json.js";
-import { getGeneIdsList, getOverlappedGenes, getGeneAssociations } from "./testing/dbHelpers.js";
+import { vcfToJson } from "./testing/annotate_json.js";
+import { getOverlappedGenes, getGeneAssociations } from "./testing/dbHelpers.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
 
@@ -142,7 +142,6 @@ app.get('/genes/region', async (req, res) => {
     let startPos = req.query.startPos
     let endChr = req.query.endChr
     let endPos = req.query.endPos
-    let between = req.query.between ? req.query.between.split(','): [];
     let sourceText = ''
 
     if (!build | !source | !startChr | !startPos | !endChr | !endPos) {
@@ -152,10 +151,41 @@ app.get('/genes/region', async (req, res) => {
 
     const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
 
-    let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, between, sourceText, db);
+    let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, db);
     db.close();
     res.send(geneMap);
 })
+
+app.get('/sv/info', async (req, res) => {
+    let build = req.query.build;
+    let source = req.query.source;
+    let startChr = req.query.startChr
+    let startPos = req.query.startPos
+    let endChr = req.query.endChr
+    let endPos = req.query.endPos
+    let sourceText = ''
+
+    if (!build | !source | !startChr | !startPos | !endChr | !endPos) {
+        res.status(400).send('Endpoint requires a start chr & position as well as an end chr & position. Typical build and source are also required');
+        return;
+    }
+
+    const geneDb = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
+    let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, geneDb);
+    geneDb.close();
+
+    let genes = Object.keys(geneMap);
+
+    const hpoDb = new sqlite3.Database('./data/hpo.db');
+    const { phenToGene, diseaseToGene } = await getGeneAssociations(genes, hpoDb);
+    hpoDb.close();
+
+    for (let gene_name in genes) {
+        geneMap[gene_name].phenotypes = phenToGene[gene_name] || {};
+        geneMap[gene_name].diseases = diseaseToGene[gene_name] || {};
+    }
+    res.send(geneMap);
+});
 
 //We will also want to get phenotypes for a given gene
 app.get('/geneAssociations', async (req, res) => {
@@ -169,7 +199,7 @@ app.get('/geneAssociations', async (req, res) => {
     const db = new sqlite3.Database('./data/hpo.db');
     const { phenToGene, diseaseToGene } = await getGeneAssociations(genes, db);
     db.close();
-    
+
     res.send({phenToGene, diseaseToGene});
 })
 
@@ -208,18 +238,7 @@ app.get('/phenotypeGenes', (req, res) => {
     });
 });
 
-//the annotate endpoint is for testing only
-app.get('/vcfjson', async (req, res) => {
-    let annotatedJson;
-    try {
-        annotatedJson = annotateJson();
-        res.send(annotatedJson);
-    } catch (e) {
-        res.status(500).send(e.message);
-    }
-});
-
-app.get('/dataFromVcf', (req, res) => {
+app.get('/dataFromVcf', async (req, res) => {
     let vcfPath = req.query.vcfPath;
 
     if (!vcfPath) {
