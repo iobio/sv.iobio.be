@@ -16,6 +16,9 @@ app.use((req, res, next) => {
     next();
 });
 
+//json
+app.use(express.json());
+
 //the bands endpoint expects a build hg19 or hg38 returns the bands
 //The gzipped files are in our data folder
 app.get('/bands', async (req, res) => {
@@ -156,35 +159,43 @@ app.get('/genes/region', async (req, res) => {
     res.send(geneMap);
 })
 
-app.get('/sv/info', async (req, res) => {
+app.post('/sv/info/batch', async (req, res) => {
     let build = req.query.build;
     let source = req.query.source;
-    let startChr = req.query.startChr
-    let startPos = req.query.startPos
-    let endChr = req.query.endChr
-    let endPos = req.query.endPos
-    let sourceText = ''
 
-    if (!build | !source | !startChr | !startPos | !endChr | !endPos) {
-        res.status(400).send('Endpoint requires a start chr & position as well as an end chr & position. Typical build and source are also required');
+    //the request body will have the variants: which is an array of objects with chromosome, startPos, endPos
+    let variants = req.body.variants;
+
+    if (!build | !source) {
+        res.status(400).send('Endpoint requires typical build and source parameters');
         return;
     }
-
+    
     const geneDb = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
-    let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, geneDb);
-    geneDb.close();
-
-    let genes = Object.keys(geneMap);
-
     const hpoDb = new sqlite3.Database('./data/hpo.db');
-    const { phenToGene, diseaseToGene } = await getGeneAssociations(genes, hpoDb);
-    hpoDb.close();
 
-    for (let gene_name in genes) {
-        geneMap[gene_name].phenotypes = phenToGene[gene_name] || {};
-        geneMap[gene_name].diseases = diseaseToGene[gene_name] || {};
+    let mappedVariants = [];
+
+    for (let variant of variants) {
+        let chromosome = `chr${variant.chromosome}`;
+        let geneMap = await getOverlappedGenes(build, source, chromosome, variant.start, chromosome, variant.end, source, geneDb);
+        let genes = Object.keys(geneMap);
+        let { phenToGene, diseaseToGene } = await getGeneAssociations(genes, hpoDb);
+
+        for (let gene_name of genes) {
+            if (!geneMap.hasOwnProperty(gene_name)) {
+                continue;
+            }
+            geneMap[gene_name].phenotypes = phenToGene[gene_name] || {};
+            geneMap[gene_name].diseases = diseaseToGene[gene_name] || {};
+        }
+        variant.overlappedGenes = geneMap;
+        mappedVariants.push(variant);
     }
-    res.send(geneMap);
+
+    geneDb.close();
+    hpoDb.close();
+    res.send(mappedVariants);
 });
 
 //We will also want to get phenotypes for a given gene

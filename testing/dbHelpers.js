@@ -1,4 +1,3 @@
-import sqlite3 from 'sqlite3';
 
 //Get a list of ids given a list of names
 export function getGeneIdsList(geneNamesList, db) {
@@ -39,15 +38,20 @@ export function getGeneAssociations(genes, db) {
                         }
                 
                         let phenotypesToGene = {};
-                        rows.forEach(row => {
-                            if (phenotypesToGene.hasOwnProperty(row.gene_symbol)){
-                                phenotypesToGene[row.gene_symbol][row.term_id] = row;
-                            } else {
-                                //establish the structure of the phenotypes to gene
-                                phenotypesToGene[row.gene_symbol] = {};
-                                phenotypesToGene[row.gene_symbol][row.term_id] = row;
-                            }
-                        })
+                        //if thre are no rows then we want to return an empty object
+                        if (!rows || rows.length === 0) {
+                            //resolve an empty object
+                        } else {
+                            rows.forEach(row => {
+                                if (phenotypesToGene.hasOwnProperty(row.gene_symbol)){
+                                    phenotypesToGene[row.gene_symbol][row.term_id] = row;
+                                } else {
+                                    //establish the structure of the phenotypes to gene
+                                    phenotypesToGene[row.gene_symbol] = {};
+                                    phenotypesToGene[row.gene_symbol][row.term_id] = row;
+                                }
+                            })
+                        }
                         resolve(phenotypesToGene);
                     });
                 })
@@ -67,14 +71,20 @@ export function getGeneAssociations(genes, db) {
                             reject(err);
                         }
                         let diseasesToGene = {};
-                        rows.forEach(row => {
-                            if (diseasesToGene.hasOwnProperty(row.gene_symbol)){
-                                diseasesToGene[row.gene_symbol][row.disease_id] = row;
-                            } else {
-                                diseasesToGene[row.gene_symbol] = {};
-                                diseasesToGene[row.gene_symbol][row.disease_id] = row;
-                            }
-                        })
+
+                        //if there are no rows then we want to return an empty object
+                        if (!rows || rows.length === 0) {
+                            //resolve an empty object
+                        } else {
+                            rows.forEach(row => {
+                                if (diseasesToGene.hasOwnProperty(row.gene_symbol)){
+                                    diseasesToGene[row.gene_symbol][row.disease_id] = row;
+                                } else {
+                                    diseasesToGene[row.gene_symbol] = {};
+                                    diseasesToGene[row.gene_symbol][row.disease_id] = row;
+                                }
+                            })
+                        }
                         resolve(diseasesToGene);
                     });
                 })
@@ -111,6 +121,7 @@ export function getOverlappedGenes(build, source, startChr, startPos, endChr, en
     
         if (startChr == endChr) {
             params = [startChr, startPos, endPos, startPos, startPos, endPos, endPos]
+
             query = `SELECT * FROM genes WHERE ${buildText} AND chr = ? AND ((start >= ? AND end <= ?) OR ((? >= start AND ? < end) OR (? >= start AND ? < end)))` + sourceText;
         } else {
             params = [startChr, startPos, startPos, endChr, endPos, endPos]
@@ -124,6 +135,10 @@ export function getOverlappedGenes(build, source, startChr, startPos, endChr, en
             //for each row we want to have this become a json object where the gene_symbol is the key
             let geneMap = {};
             rows.forEach(row => {
+                //if the gene_symbols is null then we dont want to include it
+                if (row.gene_symbol === null) {
+                    return;
+                }
                 geneMap[row.gene_symbol] = row;
             });
             resolve(geneMap);
