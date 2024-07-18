@@ -19,6 +19,11 @@ app.use((req, res, next) => {
 //json
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.send('sv.iobio Backend Running...');
+}
+);
+
 //the bands endpoint expects a build hg19 or hg38 returns the bands
 //The gzipped files are in our data folder
 app.get('/bands', async (req, res) => {
