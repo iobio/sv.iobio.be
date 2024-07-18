@@ -7,7 +7,7 @@ import sqlite3 from 'sqlite3';
 import express from 'express';
 
 const app = express();
-const port = 3000;
+const port = 7477;
 
 //will need to set the cors headers to allow all
 app.use((req, res, next) => {
