@@ -9,6 +9,9 @@ import express from 'express';
 const app = express();
 const port = 7477;
 
+// let prefix = './'; //development
+let prefix = '/' //prod
+
 //will need to set the cors headers to allow all
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -34,9 +37,9 @@ app.get('/bands', async (req, res) => {
         res.status(400).send('valid build query parameter is required');
     } else {
         if (build === 'hg19') {
-            url = './data/cytoBand_hg19.txt.gz';
+            url = `${prefix}data/cytoBand_hg19.txt.gz`;
         } else {
-            url = './data/cytoBand_hg38.txt.gz';
+            url = `${prefix}data/cytoBand_hg38.txt.gz`;
         }
 
         //Use the parseBands function to get the bands
@@ -59,9 +62,9 @@ app.get('/chromosomes', async (req, res) => {
         res.status(400).send('valid build query parameter is required');
     } else {
         if (build === 'hg19') {
-            url = './data/chromosomes_hg19.txt';
+            url = `${prefix}data/chromosomes_hg19.txt`;
         } else {
-            url = './data/chromosomes_hg38.txt';
+            url = `${prefix}data/chromosomes_hg38.txt`;
         }
 
         //Use the parseChromosomes function to get the chromosomes
@@ -84,9 +87,9 @@ app.get('/centromeres', async (req, res) => {
         res.status(400).send('valid build query parameter is required');
     } else {
         if (build === 'hg19') {
-            url = './data/gaps_ref_hg19.txt.gz';
+            url = `${prefix}data/gaps_ref_hg19.txt.gz`;
         } else {
-            url = './data/centromeres_hg38.txt';
+            url = `${prefix}data/centromeres_hg38.txt`;
         }
 
         //Use the parseHg19Centromeres or parseHg38Centromeres function to get the centromeres
@@ -125,7 +128,7 @@ app.get('/genes', (req, res) => {
         query = 'SELECT * FROM genes WHERE build = "GRCh38"' + sourceText;
     }
 
-    const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
+    const db = new sqlite3.Database(`${prefix}data/geneinfo.db/gene.iobio.db`);
 
     db.all(query, [], (err, rows) => {
         db.close(); // Close the database after fetching the data
@@ -157,7 +160,7 @@ app.get('/genes/region', async (req, res) => {
         return;
     }
 
-    const db = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
+    const db = new sqlite3.Database(`${prefix}data/geneinfo.db/gene.iobio.db`);
 
     let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, db);
     db.close();
@@ -176,8 +179,8 @@ app.post('/sv/info/batch', async (req, res) => {
         return;
     }
     
-    const geneDb = new sqlite3.Database('./data/geneinfo.db/gene.iobio.db');
-    const hpoDb = new sqlite3.Database('./data/hpo.db');
+    const geneDb = new sqlite3.Database(`${prefix}data/geneinfo.db/gene.iobio.db`);
+    const hpoDb = new sqlite3.Database(`${prefix}data/hpo.db`);
 
     let mappedVariants = [];
 
@@ -212,7 +215,7 @@ app.get('/geneAssociations', async (req, res) => {
         return;
     }
 
-    const db = new sqlite3.Database('./data/hpo.db');
+    const db = new sqlite3.Database(`${prefix}data/hpo.db`);
     const { phenToGene, diseaseToGene } = await getGeneAssociations(genes, db);
     db.close();
 
@@ -227,7 +230,7 @@ app.get('/phenotypeGenes', (req, res) => {
         return;
     }
 
-    const db = new sqlite3.Database('./data/hpo.db');
+    const db = new sqlite3.Database(`${prefix}data/hpo.db`);
 
     let placeholders = phenotypes.map(() => '?').join(',');
 
