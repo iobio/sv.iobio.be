@@ -1,7 +1,7 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
-import { vcfToJson } from "./testing/annotate_json.js";
+import { vcfToJson, vcfSamples } from "./testing/annotate_json.js";
 import { getOverlappedGenes, getGeneAssociations } from "./testing/dbHelpers.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
@@ -9,8 +9,8 @@ import express from 'express';
 const app = express();
 const port = 7477;
 
-// let prefix = './'; //development
-let prefix = '/' //prod
+let prefix = './'; //development
+// let prefix = '/' //prod
 
 //will need to set the cors headers to allow all
 app.use((req, res, next) => {
@@ -259,6 +259,7 @@ app.get('/phenotypeGenes', (req, res) => {
 
 app.get('/dataFromVcf', async (req, res) => {
     let vcfPath = req.query.vcfPath;
+    let sampleName = req.query.sampleName;
 
     if (!vcfPath) {
         res.status(400).send('Valid vcfPath query parameter is required');
@@ -267,7 +268,31 @@ app.get('/dataFromVcf', async (req, res) => {
 
     let json;
     try {
-        json = vcfToJson(vcfPath, (jsonOutput) => {
+        if (!sampleName) {
+            json = vcfToJson(vcfPath, (jsonOutput) => {
+                res.send(jsonOutput);
+            });
+        } else {
+            json = vcfToJson(vcfPath, (jsonOutput) => {
+                res.send(jsonOutput);
+            }, sampleName);
+        }
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
+app.get('/vcfSamples', async (req, res) => {
+    let vcfPath = req.query.vcfPath;
+
+    if (!vcfPath) {
+        res.status(400).send('Valid vcfPath query parameter is required');
+        return;
+    }
+
+    let json;
+    try {
+        json = vcfSamples(vcfPath, (jsonOutput) => {
             res.send(jsonOutput);
         });
     } catch (e) {
