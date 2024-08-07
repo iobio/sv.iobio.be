@@ -1,7 +1,7 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
-import { vcfToJson, vcfSamples } from "./testing/annotate_json.js";
+import { vcfToJson, vcfSamples, vcfQuality } from "./testing/annotate_json.js";
 import { getOverlappedGenes, getGeneAssociations } from "./testing/dbHelpers.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
@@ -295,6 +295,31 @@ app.get('/vcfSamples', async (req, res) => {
         json = vcfSamples(vcfPath, (jsonOutput) => {
             res.send(jsonOutput);
         });
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
+app.get('/vcfQuality', async (req, res) => {
+    let vcfPath = req.query.vcfPath;
+    let sampleName = req.query.sampleName;
+
+    if (!vcfPath) {
+        res.status(400).send('Valid vcfPath query parameter is required');
+        return;
+    }
+
+    let json;
+    try {
+        if (sampleName) {
+            json = vcfQuality(vcfPath, (jsonOutput) => {
+                res.send(jsonOutput);
+            }, sampleName);
+        } else {
+            json = vcfQuality(vcfPath, (jsonOutput) => {
+                res.send(jsonOutput);
+            });
+        }
     } catch (e) {
         res.status(500).send(e.message);
     }

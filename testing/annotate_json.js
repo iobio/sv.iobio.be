@@ -66,8 +66,7 @@ function vcfToJson(filePath, callback, sampleName=null) {
                 contigName: variant[0].replace(/^chr/, ''),
                 start: parseInt(variant[1]),
                 end: parseInt(end),
-                ref: variant[3],
-                alt: variant[4],
+                quality: variant[5],
                 variantLocation:`chr${variant[0].replace(/^chr/, '')}:${variant[1]}-${end}`, 
                 vcfInfo: '',
                 overlappedGenes: {},
@@ -134,4 +133,93 @@ function vcfSamples(filePath, callback) {
     });
 }
 
-export { vcfToJson, vcfSamples };
+function vcfQuality(filePath, callback, sampleName=null) {
+    // Determine if the filePath is a URL
+    const isUrl = filePath.startsWith('http://') || filePath.startsWith('https://') || filePath.startsWith('ftp://');
+
+    let bcftoolsCmd;
+    if (isUrl) {
+        if (!sampleName) {
+            // Use curl to stream the file from the URL
+            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools query -f '%QUAL\n'`]);
+        } else {
+            // Use curl to stream the file from the URL
+            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools query --samples ${sampleName} -f '%QUAL\n'`]);
+        }
+    } else {
+        if (!sampleName) {
+            // Directly use bcftools for local files
+            bcftoolsCmd = spawn('sh', ['-c', `bcftools query -f '%QUAL\n' ${filePath}`]);
+        } else {
+            // Directly use bcftools for local files
+            bcftoolsCmd = spawn('sh', ['-c', `bcftools query --samples ${sampleName} -f '%QUAL\n' ${filePath}`]);
+        }
+    }
+
+    let qualityArray = [];
+    let buffer = '';
+
+    bcftoolsCmd.stdout.on('data', (data) => {
+        buffer += data.toString();
+        let lines = buffer.split('\n');
+        buffer = lines.pop(); // Save the incomplete line
+        
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            qualityArray.push(line);
+        }
+    });
+
+    //Calculate the average quality, the median quality, and the IQR
+    bcftoolsCmd.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    let stats = {
+        max: null,
+        min: null,
+        avg: null,
+        median: null,
+        stdDev: null
+    };
+
+    bcftoolsCmd.on('close', (code) => {
+        let quality = qualityArray.filter(value => !isNaN(value) && value !== null && value !== undefined).map(Number);
+
+        if (quality.length === 0) {
+            callback(stats);
+            return;
+        }
+
+        let sum = quality.reduce((a, b) => a + b, 0);
+        let avg = sum / quality.length;
+        let max = Math.max(...quality);
+        let min = Math.min(...quality);
+
+        quality.sort((a, b) => a - b);
+        let median;
+        if (quality.length % 2 == 0) {
+            median = (quality[quality.length / 2 - 1] + quality[quality.length / 2]) / 2;
+        } else {
+            median = quality[(quality.length - 1) / 2];
+        }
+
+        //Calculate the standard deviation
+        let sqDiffs = quality.map(value => (value - avg) ** 2);
+        let avgSqDiff = sqDiffs.reduce((a, b) => a + b, 0) / sqDiffs.length;
+        let stdDev = Math.sqrt(avgSqDiff);
+
+        stats = {
+            max: max,
+            min: min,
+            avg: avg,
+            median: median,
+            stdDev: stdDev
+        };
+
+        callback(stats);
+    });
+}
+
+export { vcfToJson, vcfSamples, vcfQuality };
