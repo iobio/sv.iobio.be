@@ -8,18 +8,18 @@ function vcfToJson(filePath, callback, sampleName=null) {
     if (isUrl) {
         if (!sampleName) {
             // Use curl to stream the file from the URL
-            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools view -H`]);            
+            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools view -H | grep 'SVTYPE='`]);            
         } else {
             // Use curl to stream the file from the URL
-            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools view --samples ${sampleName} -H`]);
+            bcftoolsCmd = spawn('sh', ['-c', `curl -s -k ${filePath} | bcftools view --samples ${sampleName} -H | grep 'SVTYPE='`]);
         }
     } else {
         if (!sampleName) {
-            // Directly use bcftools for local files
-            bcftoolsCmd = spawn('bcftools', ['view', '-H', filePath]);  
+            // Directly use bcftools for local files and add grep
+            bcftoolsCmd = spawn('sh', ['-c', `bcftools view -H ${filePath} | grep 'SVTYPE='`]);  
         } else {
-            // Directly use bcftools for local files
-            bcftoolsCmd = spawn('bcftools', ['view', '-H', '--samples', sampleName, filePath]);
+            // Directly use bcftools for local files and add grep
+            bcftoolsCmd = spawn('sh', ['-c', `bcftools view --samples ${sampleName} -H ${filePath} | grep 'SVTYPE='`]);
         }
     }
 
@@ -79,7 +79,7 @@ function vcfToJson(filePath, callback, sampleName=null) {
             }
 
             //filter make sure the variant is at least 100bp
-            if (variantInfo.end - variantInfo.start <= 500) {
+            if (variantInfo.end - variantInfo.start <= 300) {
                 continue;
             }
 
