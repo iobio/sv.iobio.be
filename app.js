@@ -222,6 +222,39 @@ app.get('/geneAssociations', async (req, res) => {
     res.send({phenToGene, diseaseToGene});
 })
 
+app.get('/transcripts', (req, res) => {
+    let genes = req.query.genes ? req.query.genes.split(',') : [];
+
+    if (!genes) {
+        res.status(400).send('A list of genes is a required parameter for this endpoint');
+        return;
+    }
+
+    const db = new sqlite3.Database(`${prefix}data/geneinfo.db/gene.iobio.db`);
+
+    let placeholders = genes.map(() => '?').join(',');
+    let query = `SELECT * FROM transcripts WHERE gene_name IN (${placeholders}) AND source = 'gencode' AND is_mane_select = 'true'`;
+
+    db.all(query, genes, (err, rows) => {
+        db.close(); // Close the database after fetching the data
+
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+
+        let transcriptMap = {};
+        rows.forEach(row => {
+            transcriptMap[row.gene_name] = row;
+            //features come in as a string so we need to parse them as they are really an array of objects
+            if (row.features) {
+                transcriptMap[row.gene_name].features = JSON.parse(row.features);
+            }
+        });
+        res.send(transcriptMap);
+    });
+});
+
 app.get('/phenotypeGenes', (req, res) => {
     let phenotypes = req.query.phenotypes ? req.query.phenotypes.split(',') : [];
 
