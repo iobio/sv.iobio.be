@@ -54,10 +54,17 @@ function vcfToJson(filePath, callback, sampleName=null) {
                 }
             }
 
-            let type = 'none';
+            let type = false;
+            let size = false;
             for (let field of infoFields) {
                 if (field.startsWith('SVTYPE=')) {
                     type = field.split('=')[1];
+                }
+                if (field.startsWith('SVLEN=')) {
+                    size = field.split('=')[1];
+                }
+
+                if (type && size) {
                     break;
                 }
             }
@@ -66,6 +73,7 @@ function vcfToJson(filePath, callback, sampleName=null) {
                 contigName: variant[0].replace(/^chr/, ''),
                 start: parseInt(variant[1]),
                 end: parseInt(end),
+                size: size,
                 quality: variant[5],
                 variantLocation:`chr${variant[0].replace(/^chr/, '')}:${variant[1]}-${end}`, 
                 vcfInfo: '',
