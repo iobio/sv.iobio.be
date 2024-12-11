@@ -145,3 +145,34 @@ export function getOverlappedGenes(build, source, startChr, startPos, endChr, en
         });
     });
 }
+
+export function getCanonicalTranscript(transcriptsObject) {
+    let canonical = null;
+    if (!transcriptsObject || transcriptsObject.length === 0) {
+        return null;
+    }
+    
+    let cdsLengthMax = 0;
+    for (let i = 0; i < Object.values(transcriptsObject).length; i++) {
+        let transcript = Object.values(transcriptsObject)[i];
+        transcript.features = JSON.parse(transcript.features);
+
+        if (transcript.hasOwnProperty('is_mane_select') && transcript.is_mane_select) {
+            canonical = transcript;
+            break;
+        } else if (transcript.features && transcript.features.length > 0) {
+            let cdsLength = 0;
+            transcript.features.forEach(feature => {
+                if (feature.feature_type === 'CDS') {
+                    cdsLength += Math.abs(parseInt(feature.end) - parseInt(feature.start));
+                }
+            });
+            if (cdsLength > cdsLengthMax) {
+                cdsLengthMax = cdsLength;
+                canonical = transcript;
+            }
+        }
+    }
+
+    return canonical;
+}
