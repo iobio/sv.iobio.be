@@ -9,8 +9,8 @@ import express from 'express';
 const app = express();
 const port = 7477;
 
-let prefix = './'; //development
-// let prefix = '/' //production
+// let prefix = './'; //development
+let prefix = '/' //production
 
 //will need to set the cors headers to allow all
 app.use((req, res, next) => {
