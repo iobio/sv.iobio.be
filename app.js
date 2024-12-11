@@ -2,15 +2,15 @@ import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
 import { vcfToJson, vcfSamples, vcfQuality } from "./testing/annotate_json.js";
-import { getOverlappedGenes, getGeneAssociations } from "./testing/dbHelpers.js";
+import { getOverlappedGenes, getGeneAssociations, getCanonicalTranscript } from "./testing/dbHelpers.js";
 import sqlite3 from 'sqlite3';
 import express from 'express';
 
 const app = express();
 const port = 7477;
 
-// let prefix = './'; //development
-let prefix = '/' //production
+let prefix = './'; //development
+// let prefix = '/' //production
 
 //will need to set the cors headers to allow all
 app.use((req, res, next) => {
@@ -224,18 +224,30 @@ app.get('/geneAssociations', async (req, res) => {
 
 app.get('/transcripts', (req, res) => {
     let genes = req.query.genes ? req.query.genes.split(',') : [];
+    let build = req.query.build;
+    let source = req.query.source;
 
-    if (!genes) {
-        res.status(400).send('A list of genes is a required parameter for this endpoint');
+    if (!genes.length || !build || !source) {
+        res.status(400).send('A list of genes, a source, and a build are required parameters for this endpoint');
+        return;
+    }
+
+    if (build == 'hg19') {
+        build = 'GRCh37';
+    } else if (build == 'hg38') {
+        build = 'GRCh38';
+    } else {
+        res.status(400).send('Valid build query parameter is required');
         return;
     }
 
     const db = new sqlite3.Database(`${prefix}data/geneinfo.db/gene.iobio.db`);
 
     let placeholders = genes.map(() => '?').join(',');
-    let query = `SELECT * FROM transcripts WHERE gene_name IN (${placeholders}) AND source = 'gencode' AND is_mane_select = 'true'`;
+    let query = `SELECT * FROM transcripts WHERE gene_name IN (${placeholders}) AND source = ? AND build = ?`;
+    let params = [...genes, source, build];
 
-    db.all(query, genes, (err, rows) => {
+    db.all(query, params, (err, rows) => {
         db.close(); // Close the database after fetching the data
 
         if (err) {
@@ -244,12 +256,10 @@ app.get('/transcripts', (req, res) => {
         }
 
         let transcriptMap = {};
-        rows.forEach(row => {
-            transcriptMap[row.gene_name] = row;
-            //features come in as a string so we need to parse them as they are really an array of objects
-            if (row.features) {
-                transcriptMap[row.gene_name].features = JSON.parse(row.features);
-            }
+        genes.forEach(gene => {
+            let geneRows  = rows.filter(row => row.gene_name === gene);
+            let canonical = getCanonicalTranscript(geneRows);
+            transcriptMap[gene] = canonical;
         });
         res.send(transcriptMap);
     });
