@@ -4,10 +4,10 @@
 
 import { spawn } from "child_process";
 
-const popSvFile38 = "data/SVAFotate_popAFs_GRCh38.sorted.bed.gz";
-const popSvIndex38 = "data/SVAFotate_popAFs_GRCh38.sorted.bed.gz.tbi";
-const popSvFile37 = "data/SVAFotate_popAFs_GRCh37.sorted.bed.gz";
-const popSvIndex37 = "data/SVAFotate_popAFs_GRCh37.sorted.bed.gz.tbi";
+const popSvFile38 = "data/SVAFotate_popAFs_GRCh38.sorted.v4.1.bed.gz";
+const popSvIndex38 = "data/SVAFotate_popAFs_GRCh38.sorted.v4.1.bed.gz.tbi";
+const popSvFile37 = "data/SVAFotate_popAFs_GRCh37.sorted.v4.1.bed.gz";
+const popSvIndex37 = "data/SVAFotate_popAFs_GRCh37.sorted.v4.1.bed.gz.tbi";
 
 async function grabChrPopSvs(chr, start, end, svlen, build, prefix) {
     if (chr.startsWith("chr")) {
