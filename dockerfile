@@ -12,7 +12,7 @@ COPY package*.json ./
 # Install dependencies
 # Install SQLite
 RUN apt-get update
-RUN apt-get install -y sqlite3 tabix
+RUN apt-get install -y sqlite3 bcftools tabix
 
 #Node pagckage manager
 RUN npm install
