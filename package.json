@@ -1,16 +1,16 @@
 {
-  "name": "sv.iobio.be",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "back end services for testing sv.iobio",
-  "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.3",
-    "sqlite3": "^5.1.7"
-  }
+    "name": "sv.iobio.be",
+    "version": "1.8.0",
+    "type": "module",
+    "description": "back end services for testing sv.iobio",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.3",
+        "sqlite3": "^5.1.7"
+    }
 }
