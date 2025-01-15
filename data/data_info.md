@@ -10,7 +10,7 @@ Data for bands and chromosomes was retrieved from RefSeq. Their GRCh37 & 38 gff.
 gunzip -c 'Human Genome RefSeq.gff.gz' | awk '$3 == "region" && $1 ~ /^NC/ && $2 == "RefSeq" {print}' > chromosomes.txt
 ```
 
-**once parsed there is an additional entry that doesn't match the 23 that I've removed*
+\*_once parsed there is an additional entry that doesn't match the 23 that I've removed_
 
 ### Bands
 
@@ -25,3 +25,7 @@ hg19 did not provide a centromeres only reference but was listed in the "gaps" r
 ### HPO DB
 
 HPO DB is built with information downloaded from the HPO [HPO DB Downloads](https://hpo.jax.org/app/data/ontology)
+
+### SVAFotate Population AF Files
+
+Getting the SVs from the population requires bed files, tabix indexed. Currenly we are using SVAFotate's compiled reference files.
