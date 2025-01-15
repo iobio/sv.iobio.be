@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import { grabChrPopSvs } from "../parsers/popSv.js";
 
 function vcfToJson(filePath, callback, bandList, sampleName = null) {
     // Determine if the filePath is a URL
@@ -254,4 +255,50 @@ function vcfQuality(filePath, callback, sampleName = null) {
     });
 }
 
-export { vcfToJson, vcfSamples, vcfQuality };
+async function getPopSvs(chr, start, end, svlen, build, prefix) {
+    /**
+     * Returns all the population SVs that overlap with the given region
+     *
+     * Expects relative coordinates (coordinates based on the chromosome)
+     */
+
+    let chrSvs;
+    const overlapProp = 0.8;
+    let svs = [];
+
+    try {
+        chrSvs = await grabChrPopSvs(chr, start, end, svlen, build, prefix);
+
+        if (!chrSvs) {
+            console.log("No SVs found in the region");
+            return [];
+        }
+
+        for (let sv of chrSvs) {
+            if (
+                (sv.start >= start && sv.start <= end) ||
+                (sv.end >= start && sv.end <= end) ||
+                (start >= sv.start && start <= sv.end) ||
+                (end >= sv.start && end <= sv.end)
+            ) {
+                //one of the conditions for overlap is met
+                let overlap = Math.min(end, sv.end) - Math.max(start, sv.start);
+                let overlapProp1 = overlap / (end - start);
+                let overlapProp2 = overlap / (sv.end - sv.start);
+
+                //Reciprocal overlap similar to svafotate so if the other sv is giant or something like that it will not be included
+                if (overlapProp1 >= overlapProp && overlapProp2 >= overlapProp) {
+                    //add overlap proportion to sv
+                    sv.overlapFractionProd = overlapProp1 * overlapProp2;
+                    svs.push(sv);
+                }
+            }
+        }
+        return svs;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export { vcfToJson, vcfSamples, vcfQuality, getPopSvs };

@@ -1,7 +1,7 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
-import { vcfToJson, vcfSamples, vcfQuality } from "./testing/annotate_json.js";
+import { vcfToJson, vcfSamples, vcfQuality, getPopSvs } from "./testing/annotate_json.js";
 import { getOverlappedGenes, getGeneAssociations, getCanonicalTranscript } from "./testing/dbHelpers.js";
 import sqlite3 from "sqlite3";
 import express from "express";
@@ -156,7 +156,7 @@ app.get("/genes/region", async (req, res) => {
 
     if (!build | !source | !startChr | !startPos | !endChr | !endPos) {
         res.status(400).send(
-            "Endpoint requires a start chr & position as well as an end chr & position. Typical build and source are also required"
+            "Endpoint requires a start chr & position as well as an end chr & position. Typical build and source are also required",
         );
         return;
     }
@@ -166,6 +166,32 @@ app.get("/genes/region", async (req, res) => {
     let geneMap = await getOverlappedGenes(build, source, startChr, startPos, endChr, endPos, sourceText, db);
     db.close();
     res.send(geneMap);
+});
+
+app.get("/sv/pop_overlaps", async (req, res) => {
+    let build = req.query.build;
+    let chr = req.query.chr;
+    let start = req.query.start;
+    let end = req.query.end;
+    let svlen = req.query.svlen;
+
+    if (!build || !chr || !start || !end) {
+        res.status(400).send("Endpoint requires build, chr, start, and end query parameters");
+        return;
+    }
+
+    if (build !== "hg19" && build !== "hg38") {
+        res.status(400).send("Valid build query parameter is required");
+        return;
+    }
+
+    let svs;
+    try {
+        svs = await getPopSvs(chr, start, end, svlen, build, prefix);
+        res.send(svs);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
 });
 
 app.post("/sv/info/batch", async (req, res) => {
@@ -334,7 +360,7 @@ app.get("/dataFromVcf", async (req, res) => {
                 (jsonOutput) => {
                     res.send(jsonOutput);
                 },
-                bandList
+                bandList,
             );
         } else {
             json = vcfToJson(
@@ -343,7 +369,7 @@ app.get("/dataFromVcf", async (req, res) => {
                     res.send(jsonOutput);
                 },
                 bandList,
-                sampleName
+                sampleName,
             );
         }
     } catch (e) {
@@ -386,7 +412,7 @@ app.get("/vcfQuality", async (req, res) => {
                 (jsonOutput) => {
                     res.send(jsonOutput);
                 },
-                sampleName
+                sampleName,
             );
         } else {
             json = vcfQuality(vcfPath, (jsonOutput) => {
