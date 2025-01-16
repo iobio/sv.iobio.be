@@ -57,8 +57,29 @@ function vcfToJson(filePath, callback, bandList, sampleName = null) {
                 }
             }
 
+            let genotypeFormat = variant[8].split(":");
+            let genotype = variant[9].split(":");
+            let dupHChr = false;
+            let dupHFlank = false;
+            let dupHBinGC = false;
+
+            //if DHFC, DHFFC, DHBFC, or DHSP is in the genotype format we will want to get their index
+            for (let i = 0; i < genotypeFormat.length; i++) {
+                if (genotypeFormat[i] === "DHFC") {
+                    dupHChr = genotype[i];
+                }
+                if (genotypeFormat[i] === "DHFFC") {
+                    dupHFlank = genotype[i];
+                }
+                if (genotypeFormat[i] === "DHBFC") {
+                    dupHBinGC = genotype[i];
+                }
+            }
+
             let type = false;
             let size = false;
+            let svafotate = false;
+            let gcFraction = false;
             for (let field of infoFields) {
                 if (field.startsWith("SVTYPE=")) {
                     type = field.split("=")[1];
@@ -66,8 +87,14 @@ function vcfToJson(filePath, callback, bandList, sampleName = null) {
                 if (field.startsWith("SVLEN=")) {
                     size = field.split("=")[1];
                 }
+                if (field.startsWith("Max_AF=")) {
+                    svafotate = field.split("=")[1];
+                }
+                if (field.startsWith("GCF=")) {
+                    gcFraction = field.split("=")[1];
+                }
 
-                if (type && size) {
+                if (type && size && svafotate && gcFraction) {
                     break;
                 }
             }
@@ -77,6 +104,11 @@ function vcfToJson(filePath, callback, bandList, sampleName = null) {
                 start: parseInt(variant[1]),
                 end: parseInt(end),
                 size: size,
+                svafotateMaxAf: svafotate || "",
+                dupHChr: dupHChr || "",
+                dupHFlank: dupHFlank || "",
+                dupHBinGC: dupHBinGC || "",
+                gcFraction: gcFraction || "",
                 quality: variant[5],
                 variantLocation: `chr${variant[0].replace(/^chr/, "")}:${variant[1]}-${end}`,
                 vcfInfo: "",
