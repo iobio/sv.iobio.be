@@ -1,6 +1,6 @@
 {
     "name": "sv.iobio.be",
-    "version": "1.8.0",
+    "version": "1.8.1",
     "type": "module",
     "description": "back end services for testing sv.iobio",
     "main": "app.js",
