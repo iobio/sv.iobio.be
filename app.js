@@ -1,5 +1,6 @@
 import { parseBands } from "./parsers/bands.js";
 import { parseChromosomes } from "./parsers/chromosomes.js";
+import { parseClinGenRegions, parseClinGenGenes } from "./parsers/clinGen.js";
 import { parseHg19Centromeres, parseHg38Centromeres } from "./parsers/centromeres.js";
 import { vcfToJson, vcfSamples, vcfQuality, getPopSvs } from "./testing/annotate_json.js";
 import { getOverlappedGenes, getGeneAssociations, getCanonicalTranscript } from "./testing/dbHelpers.js";
@@ -143,6 +144,50 @@ app.get("/genes", (req, res) => {
         });
         res.send(geneMap);
     });
+});
+
+app.get("/doseSensitiveGenes", async (req, res) => {
+    let build = req.query.build;
+
+    if (!build || (build !== "hg19" && build !== "hg38")) {
+        res.status(400).send("Valid build query parameter is required");
+        return;
+    }
+
+    const urlStart = `${prefix}/data/ClinGen_gene_`;
+
+    try {
+        let sensitiveGenes;
+        sensitiveGenes = await parseClinGenGenes(build, urlStart);
+
+        let response = { sensitiveGenes };
+
+        res.send(response);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
+app.get("/doseSensitiveRegions", async (req, res) => {
+    let build = req.query.build;
+
+    if (!build || (build !== "hg19" && build !== "hg38")) {
+        res.status(400).send("Valid build query parameter is required");
+        return;
+    }
+
+    const urlStart = `${prefix}/data/ClinGen_region_`;
+
+    try {
+        let sensitiveRegions;
+        sensitiveRegions = await parseClinGenRegions(build, urlStart);
+
+        let response = { sensitiveRegions };
+
+        res.send(response);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
 });
 
 app.get("/genes/region", async (req, res) => {
