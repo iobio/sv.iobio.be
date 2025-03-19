@@ -372,6 +372,42 @@ app.get("/phenotypeGenes", (req, res) => {
     });
 });
 
+app.get("/phenotype/lookup", (req, res) => {
+    let phenotype = req.query.phenotype;
+    let hpo_id = req.query.hpo_id;
+
+    if (!phenotype && !hpo_id) {
+        res.status(400).send("A phenotype or hpo_id is a required parameter for this endpoint");
+        return;
+    } else if (phenotype && hpo_id) {
+        res.status(400).send("Only one of phenotype or hpo_id is allowed");
+        return;
+    }
+
+    let query;
+    let params;
+    const db = new sqlite3.Database(`${prefix}data/hpo.db`);
+
+    if (phenotype) {
+        query = `SELECT term_id, name FROM Terms WHERE name LIKE ?`;
+        params = `%${phenotype}%`;
+    } else {
+        query = `SELECT term_id, name FROM Terms WHERE term_id = ?`;
+        params = hpo_id;
+    }
+
+    db.all(query, params, (err, row) => {
+        db.close(); // Close the database after fetching the data
+
+        if (err) {
+            res.status(500).send(err.message);
+            return;
+        }
+
+        res.send(row);
+    });
+});
+
 app.get("/dataFromVcf", async (req, res) => {
     let vcfPath = req.query.vcfPath;
     let sampleName = req.query.sampleName;
