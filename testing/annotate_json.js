@@ -83,6 +83,11 @@ function vcfToJson(filePath, callback, bandList, sampleName = null) {
             for (let field of infoFields) {
                 if (field.startsWith("SVTYPE=")) {
                     type = field.split("=")[1];
+
+                    // If the type is CNV check the variant at index 4 to see if that is something different
+                    if (type === "CNV" && variant[4] && variant[4] !== ".") {
+                        type = variant[4].replace(/<|>/g, "");
+                    }
                 }
                 if (field.startsWith("SVLEN=")) {
                     size = field.split("=")[1];
