@@ -294,6 +294,43 @@ app.get("/geneAssociations", async (req, res) => {
     res.send({ phenToGene, diseaseToGene });
 });
 
+app.get("/disease/phenotypes", async (req, res) => {
+    let disease = req.query.disease;
+
+    if (!disease) {
+        res.status(400).send("A disease is a required parameter for this endpoint");
+        return;
+    }
+
+    const db = new sqlite3.Database(`${prefix}data/hpo.db`);
+
+    // Fixed SQL query with proper joins and parameterization
+    let diseaseQuery = `
+        SELECT 
+            ttg.term_id,
+            t.name as phenotype_name,
+            ttg.disease_id,
+            d.disease_name
+        FROM term_to_gene ttg
+        JOIN Terms t ON ttg.term_id = t.term_id
+        JOIN Diseases d ON ttg.disease_id = d.disease_id
+        WHERE ttg.disease_id = ?
+    `;
+
+    db.all(diseaseQuery, [disease], (err, rows) => {
+        db.close();
+
+        if (err) {
+            console.error("Database error:", err);
+            res.status(500).send(err.message);
+            return;
+        }
+
+        // rows already contains the data we want, no need to loop
+        res.send(rows);
+    });
+});
+
 app.get("/transcripts", (req, res) => {
     let genes = req.query.genes ? req.query.genes.split(",") : [];
     let build = req.query.build;
