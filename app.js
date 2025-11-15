@@ -8,7 +8,8 @@ import sqlite3 from "sqlite3";
 import express from "express";
 
 const app = express();
-const port = 7477;
+const portArg = process.argv[2];
+const port = Number(portArg ? portArg : 7477);
 
 // let prefix = "./"; //development
 let prefix = "/"; //production
